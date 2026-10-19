@@ -1,0 +1,7 @@
+# Simulation build artifacts — regenerate these with the commands in README.md
+sim/*.vvp
+sim/*.vcd
+
+# Editor/OS cruft
+.DS_Store
+*.swp
