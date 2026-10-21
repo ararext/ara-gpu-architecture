@@ -1,6 +1,10 @@
 // =====================================================================
 // control_unit.v — Decodes the 4-bit opcode into control signals.
 // Segment 1: Baseline CPU Design
+// Segment 2 addition: uses_rs1 / uses_rs2 tell the hazard logic which
+// source registers an instruction actually READS. Without them, MOVI
+// (which only uses an immediate) would look like it depends on whatever
+// register number happens to sit in its rs1/rs2 bit-fields.
 //
 // Instruction format (12 bits): [opcode(4)][rd(2)][rs1(2)][rs2/imm(4)]
 //   - Register ops use rs2/imm[1:0] as the rs2 register address.
@@ -11,7 +15,9 @@ module control_unit (
     output reg        reg_write,   // 1 = write ALU result back to rd
     output reg [3:0]  alu_op,      // passed straight to the ALU
     output reg        use_imm,     // 1 = ALU operand B is the immediate
-    output reg        halt         // 1 = stop the CPU (freeze PC)
+    output reg        halt,        // 1 = stop the CPU (freeze PC)
+    output reg        uses_rs1,    // 1 = instruction reads register rs1
+    output reg        uses_rs2     // 1 = instruction reads register rs2
 );
 
     localparam OP_ADD  = 4'h1;
@@ -35,6 +41,18 @@ module control_unit (
             OP_ADD, OP_SUB, OP_MUL, OP_AND, OP_OR, OP_XOR,
             OP_SHL, OP_SHR, OP_MOVI: reg_write = 1'b1;
             default:                 reg_write = 1'b0;   // NOP, CMP, HALT don't write
+        endcase
+
+        case (opcode)
+            OP_ADD, OP_SUB, OP_MUL, OP_AND, OP_OR, OP_XOR,
+            OP_SHL, OP_SHR, OP_CMP: begin
+                uses_rs1 = 1'b1;
+                uses_rs2 = 1'b1;
+            end
+            default: begin                   // NOP, MOVI, HALT read no registers
+                uses_rs1 = 1'b0;
+                uses_rs2 = 1'b0;
+            end
         endcase
     end
 

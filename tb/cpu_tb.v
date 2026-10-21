@@ -55,12 +55,12 @@ module cpu_tb;
         $dumpvars(0, cpu_tb);
 
         rst = 1;
-        repeat (2) @(posedge clk);
+        repeat (2) @(negedge clk);   // release reset on a falling edge (avoids a race with the counter)
         rst = 0;
 
         // Run until HALT or a generous timeout (safety net against infinite loops)
         wait (halted == 1'b1 || cycle_count > 100);
-        #1;
+        @(posedge clk); #1;          // include the HALT cycle itself in the count
 
         if (cycle_count > 100) begin
             $display("FAIL: CPU never asserted halted — check control_unit/HALT decode");
